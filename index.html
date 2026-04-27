@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QQ Browser - AI Smart Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animations and transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        .toast-notification {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Custom toggle switch */
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #1890ff;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .container {
+                padding: 0 16px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-20 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"></div>
+    
+    <!-- Homepage -->
+    <div id="homepage" class="min-h-screen bg-white">
+        <!-- Header with Logo and Search Bar -->
+        <header class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+            <div class="container mx-auto">
+                <!-- Logo -->
+                <div class="text-center mb-4">
+                    <h1 class="text-2xl font-bold">QQ Browser</h1>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="searchInput"
+                        placeholder="AI 智能搜索"
+                        class="w-full px-4 py-3 pr-20 rounded-full text-gray-800 bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    >
+                    <!-- Voice and Image Search Icons -->
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                        <button 
+                            onclick="startVoiceSearch()"
+                            class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                        >
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                            </svg>
+                        </button>
+                        <button 
+                            onclick="startImageSearch()"
+                            class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                        >
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- AI+Card Content Fusion Section -->
+        <main class="container mx-auto px-4 py-6">
+            <!-- Interactive Prompt Suggestions -->
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">AI智能提示</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button 
+                        onclick="setSearchPrompt('最新AI技术发展趋势')"
+                        class="px-3 py-2 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
+                    >
+                        最新AI技术发展趋势
+                    </button>
+                    <button 
+                        onclick="setSearchPrompt('产品经理必备技能')"
+                        class="px-3 py-2 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
+                    >
+                        产品经理必备技能
+                    </button>
+                    <button 
+                        onclick="setSearchPrompt('移动端用户体验设计')"
+                        class="px-3 py-2 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
+                    >
+                        移动端用户体验设计
+                    </button>
+                    <button 
+                        onclick="setSearchPrompt('智能搜索算法原理')"
+                        class="px-3 py-2 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
+                    >
+                        智能搜索算法原理
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Content Mode Toggle -->
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">内容融合展示</h2>
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-600">传统资讯</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="homeContentToggle" onchange="toggleHomeContent()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-600">AI融合</span>
+                </div>
+            </div>
+            
+            <!-- Traditional News Cards -->
+            <div id="traditionalContent" class="space-y-4">
+                <!-- News Card 1 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="flex">
+                        <div class="w-24 h-24 bg-gray-200 flex-shrink-0">
+                            <img src="https://picsum.photos/seed/news1/96/96.jpg" alt="News image" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3 flex-1">
+                            <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">AI技术革命性改变数字搜索体验</h3>
+                            <p class="text-xs text-gray-500">科技新闻 · 2小时前</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- News Card 2 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="flex">
+                        <div class="w-24 h-24 bg-gray-200 flex-shrink-0">
+                            <img src="https://picsum.photos/seed/news2/96/96.jpg" alt="News image" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3 flex-1">
+                            <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">产品经理培训项目需求激增</h3>
+                            <p class="text-xs text-gray-500">教育 · 5小时前</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- News Card 3 -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="flex">
+                        <div class="w-24 h-24 bg-gray-200 flex-shrink-0">
+                            <img src="https://picsum.photos/seed/news3/96/96.jpg" alt="News image" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3 flex-1">
+                            <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">移动浏览器创新推动用户体验升级</h3>
+                            <p class="text-xs text-gray-500">数字趋势 · 1天前</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Fused Content -->
+            <div id="aiFusedContent" class="hidden space-y-4">
+                <!-- AI Enhanced Card 1 -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-blue-200">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-900 mb-2">AI技术革命性改变数字搜索体验</h3>
+                            <div class="bg-white/70 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700 leading-relaxed">
+                                    <strong>AI智能分析：</strong>基于最新技术趋势，AI搜索正在重塑用户体验。通过深度学习和自然语言处理，搜索准确率提升85%，用户满意度显著提高。
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-gray-500">科技新闻 · 2小时前</p>
+                                <button 
+                                    onclick="showToast('AI深度分析功能 - 演示模式')"
+                                    class="text-xs text-blue-600 hover:text-blue-800"
+                                >
+                                    查看AI分析 →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Enhanced Card 2 -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-green-200">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-900 mb-2">产品经理培训项目需求激增</h3>
+                            <div class="bg-white/70 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700 leading-relaxed">
+                                    <strong>AI智能洞察：</strong>市场调研显示，产品经理培训需求同比增长300%。AI推荐系统分析显示，技术背景和商业思维结合的课程最受欢迎。
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-gray-500">教育 · 5小时前</p>
+                                <button 
+                                    onclick="showToast('AI推荐相关课程 - 演示模式')"
+                                    class="text-xs text-green-600 hover:text-green-800"
+                                >
+                                    查看推荐 →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Enhanced Card 3 -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-purple-200">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-900 mb-2">移动端用户体验设计趋势</h3>
+                            <div class="bg-white/70 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700 leading-relaxed">
+                                    <strong>AI智能预测：</strong>基于用户行为分析，2024年移动端UX设计将更加注重个性化和智能化。AI驱动的自适应界面将成为主流趋势。
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-gray-500">数字趋势 · 1天前</p>
+                                <button 
+                                    onclick="showToast('AI设计趋势报告 - 演示模式')"
+                                    class="text-xs text-purple-600 hover:text-purple-800"
+                                >
+                                    查看趋势 →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+            <div class="flex justify-around py-2">
+                <button class="flex flex-col items-center p-2 text-blue-500">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+                    </svg>
+                    <span class="text-xs">首页</span>
+                </button>
+                <button class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-500 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path>
+                    </svg>
+                    <span class="text-xs">视频</span>
+                </button>
+                <button class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-500 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                    </svg>
+                    <span class="text-xs">我的</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Search Results Page -->
+    <div id="searchResults" class="min-h-screen bg-white hidden">
+        <!-- Header with Search Bar -->
+        <header class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+            <div class="container mx-auto">
+                <!-- Search Bar with Back Button -->
+                <div class="relative">
+                    <button 
+                        onclick="showHomepage()"
+                        class="absolute left-3 top-1/2 transform -translate-y-1/2 p-1"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <input 
+                        type="text" 
+                        value="AI产品经理训练营"
+                        readonly
+                        class="w-full px-12 py-3 pr-20 rounded-full text-gray-800 bg-white shadow-lg"
+                    >
+                    <!-- Voice and Image Search Icons -->
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                        <button 
+                            onclick="startVoiceSearch()"
+                            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                            </svg>
+                        </button>
+                        <button 
+                            onclick="startImageSearch()"
+                            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Enhanced AI Mode Toggle with Three Options -->
+        <div class="bg-white border-b border-gray-200 px-4 py-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-800">内容展示模式</h3>
+            </div>
+            <div class="flex space-x-2">
+                <button 
+                    id="traditionalBtn"
+                    onclick="setSearchMode('traditional')"
+                    class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    传统结果
+                </button>
+                <button 
+                    id="fusedBtn"
+                    onclick="setSearchMode('fused')"
+                    class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    AI融合
+                </button>
+                <button 
+                    id="aiBtn"
+                    onclick="setSearchMode('ai')"
+                    class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    AI智能
+                </button>
+            </div>
+        </div>
+        
+        <!-- Enhanced Search Results Container -->
+        <main class="container mx-auto px-4 py-4 pb-20">
+            <!-- Traditional Search Results -->
+            <div id="traditionalResults" class="space-y-4">
+                <!-- Result 1 -->
+                <div class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-600 font-medium text-sm mb-1 hover:underline cursor-pointer">
+                        2024年最佳产品经理训练营 - 完整指南
+                    </h3>
+                    <p class="text-green-600 text-xs mb-2">www.productmanagement.com/training-camps</p>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        发现2024年顶级产品经理训练营。我们的综合指南涵盖课程、定价和职业成果，帮助有志于加速职业发展的产品经理...
+                    </p>
+                </div>
+                
+                <!-- Result 2 -->
+                <div class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-600 font-medium text-sm mb-1 hover:underline cursor-pointer">
+                        AI产品经理认证 - 在线课程与项目
+                    </h3>
+                    <p class="text-green-600 text-xs mb-2">www.aipm-certification.org</p>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        专业的AI产品经理培训项目，结合技术知识与商业策略。学习机器学习基础、数据驱动决策和AI产品生命周期管理...
+                    </p>
+                </div>
+                
+                <!-- Result 3 -->
+                <div class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-600 font-medium text-sm mb-1 hover:underline cursor-pointer">
+                        产品经理训练营评测 - 学员真实体验
+                    </h3>
+                    <p class="text-green-600 text-xs mb-2">www.bootcamp-reviews.com/pm</p>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        来自顶级产品经理训练营毕业生的真实评价。比较项目、阅读成功故事，找到最适合您职业目标和预算的选择...
+                    </p>
+                </div>
+                
+                <!-- Result 4 -->
+                <div class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-600 font-medium text-sm mb-1 hover:underline cursor-pointer">
+                        免费vs付费产品经理培训 - 哪个值得投资？
+                    </h3>
+                    <p class="text-green-600 text-xs mb-2">www.career-advice.tech/pm-training</p>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        深度分析免费和付费产品经理培训选项。了解哪些项目提供最佳投资回报，以及您应该专注于哪些技能以获得最大职业影响...
+                    </p>
+                </div>
+                
+                <!-- Result 5 -->
+                <div class="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-blue-600 font-medium text-sm mb-1 hover:underline cursor-pointer">
+                        企业产品经理培训项目
+                    </h3>
+                    <p class="text-green-600 text-xs mb-2">www.corporate-training.com/pm</p>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        面向企业的产品经理培训解决方案。可定制项目旨在通过行业最佳实践提升您的产品管理团队技能...
+                    </p>
+                </div>
+            </div>
+            
+            <!-- AI Fused Results -->
+            <div id="fusedResults" class="hidden space-y-4">
+                <!-- Fused Result 1 -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-blue-200">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">2024年最佳产品经理训练营</h3>
+                                <p class="text-green-600 text-xs">www.productmanagement.com/training-camps</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">AI增强</span>
+                    </div>
+                    <div class="bg-white/70 rounded-lg p-3 mb-3">
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            <strong>AI智能分析：</strong>基于您搜索的产品经理训练营，AI分析发现该项目在2024年排名前三，课程涵盖产品策略、用户研究等核心技能，就业率达85%。
+                        </p>
+                    </div>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        发现2024年顶级产品经理训练营。我们的综合指南涵盖课程、定价和职业成果...
+                    </p>
+                    <div class="flex items-center justify-between mt-3">
+                        <p class="text-xs text-gray-500">更新于2小时前</p>
+                        <button class="text-xs text-blue-600 hover:text-blue-800">查看AI分析 →</button>
+                    </div>
+                </div>
+                
+                <!-- Fused Result 2 -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-green-200">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">AI产品经理认证</h3>
+                                <p class="text-green-600 text-xs">www.aipm-certification.org</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 bg-green-100 text-green-600 text-xs rounded-full">推荐</span>
+                    </div>
+                    <div class="bg-white/70 rounded-lg p-3 mb-3">
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            <strong>AI智能推荐：</strong>该项目专注于AI产品管理，结合机器学习和商业策略。根据您的搜索历史，该项目匹配度92%。
+                        </p>
+                    </div>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        专业的AI产品经理培训项目，结合技术知识与商业策略。学习机器学习基础...
+                    </p>
+                    <div class="flex items-center justify-between mt-3">
+                        <p class="text-xs text-gray-500">更新于5小时前</p>
+                        <button class="text-xs text-green-600 hover:text-green-800">查看详情 →</button>
+                    </div>
+                </div>
+                
+                <!-- Fused Result 3 -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border border-purple-200">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">产品经理训练营评测</h3>
+                                <p class="text-green-600 text-xs">www.bootcamp-reviews.com/pm</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 bg-purple-100 text-purple-600 text-xs rounded-full">热门</span>
+                    </div>
+                    <div class="bg-white/70 rounded-lg p-3 mb-3">
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            <strong>AI智能洞察：</strong>基于10,000+学员评价，该项目满意度4.8/5.0。AI分析显示学员平均薪资增长45%。
+                        </p>
+                    </div>
+                    <p class="text-gray-600 text-xs leading-relaxed">
+                        来自顶级产品经理训练营毕业生的真实评价。比较项目、阅读成功故事...
+                    </p>
+                    <div class="flex items-center justify-between mt-3">
+                        <p class="text-xs text-gray-500">更新于1天前</p>
+                        <button class="text-xs text-purple-600 hover:text-purple-800">查看评价 →</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pure AI Results -->
+            <div id="aiResults" class="hidden">
+                <!-- AI Summary Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 shadow-lg border border-blue-200">
+                    <!-- AI Header -->
+                    <div class="flex items-start space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-900 mb-1">AI智能摘要</h3>
+                            <p class="text-xs text-gray-500">基于综合分析生成</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Structured Summary -->
+                    <div class="space-y-3 mb-4">
+                        <div>
+                            <h4 class="font-medium text-gray-800 text-sm mb-2">产品经理训练营概览：</h4>
+                            <ul class="space-y-2 text-sm text-gray-700">
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">·</span>
+                                    <span><strong>核心技能：</strong>产品策略、用户研究、数据分析和路线图规划</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">·</span>
+                                    <span><strong>培训周期：</strong>8-12周强化项目，包含真实世界项目</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">·</span>
+                                    <span><strong>费用范围：</strong>3,000-15,000元，取决于项目声望和形式</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">·</span>
+                                    <span><strong>就业成果：</strong>顶级项目6个月内就业率达85%</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">·</span>
+                                    <span><strong>AI整合：</strong>现代项目包含AI/ML基础和数据驱动决策</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-gray-800 text-sm mb-2">顶级推荐：</h4>
+                            <ul class="space-y-1 text-sm text-gray-700">
+                                <li class="flex items-start">
+                                    <span class="text-green-500 mr-2">1.</span>
+                                    <span><strong>科技PM学院：</strong>最适合科技行业就业</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-green-500 mr-2">2.</span>
+                                    <span><strong>AI产品研究院：</strong>专注于AI产品管理</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-green-500 mr-2">3.</span>
+                                    <span><strong>企业PM训练营：</strong>适合职业转型者</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3">
+                        <button 
+                            onclick="showToast('追问功能 - 演示模式')"
+                            class="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                        >
+                            追问
+                        </button>
+                        <button 
+                            onclick="copyAISummary()"
+                            class="flex-1 bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            复制
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Related AI Suggestions -->
+                <div class="mt-4">
+                    <h4 class="text-sm font-medium text-gray-800 mb-3">AI智能推荐</h4>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-colors">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">相关课程推荐</h5>
+                            <p class="text-xs text-gray-600">基于您的搜索，AI推荐以下相关课程...</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-colors">
+                            <h5 class="text-sm font-medium text-gray-900 mb-1">职业发展路径</h5>
+                            <p class="text-xs text-gray-600">AI分析显示产品经理的职业发展机会...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+            <div class="flex justify-around py-2">
+                <button class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-500 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+                    </svg>
+                    <span class="text-xs">首页</span>
+                </button>
+                <button class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-500 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path>
+                    </svg>
+                    <span class="text-xs">视频</span>
+                </button>
+                <button class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-500 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                    </svg>
+                    <span class="text-xs">我的</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    
+    <script>
+        // Global variables
+        let isAIMode = false;
+        let isHomeAIMode = false;
+        let currentSearchMode = 'traditional';
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup search input listener
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // Initialize mobile optimizations
+            optimizeForMobile();
+        });
+        
+        // Search functionality
+        function performSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+            
+            if (searchTerm) {
+                showSearchResults();
+            }
+        }
+        
+        // Interactive prompt functionality
+        function setSearchPrompt(prompt) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = prompt;
+            showToast(`已设置搜索提示：${prompt}`);
+        }
+        
+        // Home content toggle functionality
+        function toggleHomeContent() {
+            const homeToggle = document.getElementById('homeContentToggle');
+            isHomeAIMode = homeToggle.checked;
+            
+            if (isHomeAIMode) {
+                showAIFusedContent();
+            } else {
+                showTraditionalContent();
+            }
+        }
+        
+        function showTraditionalContent() {
+            const traditionalContent = document.getElementById('traditionalContent');
+            const aiFusedContent = document.getElementById('aiFusedContent');
+            
+            // Fade out AI content
+            aiFusedContent.classList.add('fade-out');
+            
+            setTimeout(() => {
+                aiFusedContent.classList.add('hidden');
+                aiFusedContent.classList.remove('fade-out');
+                
+                // Fade in traditional content
+                traditionalContent.classList.remove('hidden');
+                traditionalContent.classList.add('fade-in');
+                
+                setTimeout(() => {
+                    traditionalContent.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        function showAIFusedContent() {
+            const traditionalContent = document.getElementById('traditionalContent');
+            const aiFusedContent = document.getElementById('aiFusedContent');
+            
+            // Fade out traditional content
+            traditionalContent.classList.add('fade-out');
+            
+            setTimeout(() => {
+                traditionalContent.classList.add('hidden');
+                traditionalContent.classList.remove('fade-out');
+                
+                // Fade in AI content
+                aiFusedContent.classList.remove('hidden');
+                aiFusedContent.classList.add('fade-in');
+                
+                setTimeout(() => {
+                    aiFusedContent.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        // Page navigation
+        function showSearchResults() {
+            const homepage = document.getElementById('homepage');
+            const searchResults = document.getElementById('searchResults');
+            
+            // Hide homepage with fade out
+            homepage.classList.add('fade-out');
+            
+            setTimeout(() => {
+                homepage.classList.add('hidden');
+                homepage.classList.remove('fade-out');
+                
+                // Show search results with fade in
+                searchResults.classList.remove('hidden');
+                searchResults.classList.add('fade-in');
+                
+                setTimeout(() => {
+                    searchResults.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+            
+            // Reset search mode
+            setSearchMode('traditional');
+        }
+        
+        function showHomepage() {
+            const homepage = document.getElementById('homepage');
+            const searchResults = document.getElementById('searchResults');
+            
+            // Hide search results with fade out
+            searchResults.classList.add('fade-out');
+            
+            setTimeout(() => {
+                searchResults.classList.add('hidden');
+                searchResults.classList.remove('fade-out');
+                
+                // Show homepage with fade in
+                homepage.classList.remove('hidden');
+                homepage.classList.add('fade-in');
+                
+                setTimeout(() => {
+                    homepage.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        // Enhanced Search Mode Management
+        function setSearchMode(mode) {
+            currentSearchMode = mode;
+            
+            // Update button styles
+            const traditionalBtn = document.getElementById('traditionalBtn');
+            const fusedBtn = document.getElementById('fusedBtn');
+            const aiBtn = document.getElementById('aiBtn');
+            
+            // Reset all buttons
+            [traditionalBtn, fusedBtn, aiBtn].forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
+                btn.classList.add('border-gray-300', 'text-gray-700');
+            });
+            
+            // Highlight active button
+            const activeBtn = mode === 'traditional' ? traditionalBtn : mode === 'fused' ? fusedBtn : aiBtn;
+            activeBtn.classList.remove('border-gray-300', 'text-gray-700');
+            activeBtn.classList.add('bg-blue-500', 'text-white', 'border-blue-500');
+            
+            // Show corresponding content
+            if (mode === 'traditional') {
+                showTraditionalResults();
+            } else if (mode === 'fused') {
+                showFusedResults();
+            } else {
+                showAIResults();
+            }
+        }
+        
+        function showFusedResults() {
+            const traditionalResults = document.getElementById('traditionalResults');
+            const fusedResults = document.getElementById('fusedResults');
+            const aiResults = document.getElementById('aiResults');
+            
+            // Hide all results
+            [traditionalResults, aiResults].forEach(result => {
+                result.classList.add('fade-out');
+                setTimeout(() => {
+                    result.classList.add('hidden');
+                    result.classList.remove('fade-out');
+                }, 300);
+            });
+            
+            // Show fused results
+            setTimeout(() => {
+                fusedResults.classList.remove('hidden');
+                fusedResults.classList.add('fade-in');
+                setTimeout(() => {
+                    fusedResults.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        function showTraditionalResults() {
+            const traditionalResults = document.getElementById('traditionalResults');
+            const fusedResults = document.getElementById('fusedResults');
+            const aiResults = document.getElementById('aiResults');
+            
+            // Hide other results
+            [fusedResults, aiResults].forEach(result => {
+                result.classList.add('fade-out');
+                setTimeout(() => {
+                    result.classList.add('hidden');
+                    result.classList.remove('fade-out');
+                }, 300);
+            });
+            
+            // Show traditional results
+            setTimeout(() => {
+                traditionalResults.classList.remove('hidden');
+                traditionalResults.classList.add('fade-in');
+                setTimeout(() => {
+                    traditionalResults.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        function showAIResults() {
+            const traditionalResults = document.getElementById('traditionalResults');
+            const fusedResults = document.getElementById('fusedResults');
+            const aiResults = document.getElementById('aiResults');
+            
+            // Hide other results
+            [traditionalResults, fusedResults].forEach(result => {
+                result.classList.add('fade-out');
+                setTimeout(() => {
+                    result.classList.add('hidden');
+                    result.classList.remove('fade-out');
+                }, 300);
+            });
+            
+            // Show AI results
+            setTimeout(() => {
+                aiResults.classList.remove('hidden');
+                aiResults.classList.add('fade-in');
+                setTimeout(() => {
+                    aiResults.classList.remove('fade-in');
+                }, 300);
+            }, 300);
+        }
+        
+        // Toast notification system
+        function showToast(message) {
+            const toastContainer = document.getElementById('toastContainer');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg mb-2 pointer-events-auto';
+            toast.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path>
+                    </svg>
+                    <span class="text-sm">${message}</span>
+                </div>
+            `;
+            
+            // Add to container
+            toastContainer.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // Copy AI Summary functionality
+        function copyAISummary() {
+            const summaryText = `产品经理训练营概览：
+
+核心技能：产品策略、用户研究、数据分析和路线图规划
+培训周期：8-12周强化项目，包含真实世界项目
+费用范围：3,000-15,000元，取决于项目声望和形式
+就业成果：顶级项目6个月内就业率达85%
+AI整合：现代项目包含AI/ML基础和数据驱动决策
+
+顶级推荐：
+1. 科技PM学院：最适合科技行业就业
+2. AI产品研究院：专注于AI产品管理
+3. 企业PM训练营：适合职业转型者`;
+            
+            // Create temporary textarea to copy text
+            const textarea = document.createElement('textarea');
+            textarea.value = summaryText;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            showToast('AI摘要已复制到剪贴板');
+        }
+        
+        // Enhanced Voice Search Functionality
+        function startVoiceSearch() {
+            showToast('语音搜索已启动 - 请说出您的问题');
+            
+            // Simulate voice recognition animation
+            const searchInput = document.getElementById('searchInput');
+            const originalPlaceholder = searchInput.placeholder;
+            
+            // Show listening animation
+            let dots = 0;
+            const listeningInterval = setInterval(() => {
+                dots = (dots + 1) % 4;
+                searchInput.placeholder = '正在听取' + '.'.repeat(dots);
+            }, 500);
+            
+            // Simulate voice recognition after 3 seconds
+            setTimeout(() => {
+                clearInterval(listeningInterval);
+                searchInput.placeholder = originalPlaceholder;
+                
+                // Set recognized text
+                const voiceQueries = [
+                    '最新AI技术发展趋势',
+                    '产品经理必备技能有哪些',
+                    '移动端用户体验设计原则',
+                    '智能搜索算法如何工作'
+                ];
+                
+                const randomQuery = voiceQueries[Math.floor(Math.random() * voiceQueries.length)];
+                searchInput.value = randomQuery;
+                
+                showToast(`语音识别成功：${randomQuery}`);
+                
+                // Auto search after voice recognition
+                setTimeout(() => {
+                    performSearch();
+                }, 1000);
+            }, 3000);
+        }
+        
+        // Enhanced Image Search Functionality
+        function startImageSearch() {
+            showToast('图像搜索已启动 - 请选择或拍摄图片');
+            
+            // Create image upload modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 mx-4 max-w-sm w-full">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">图像搜索</h3>
+                    <div class="space-y-3">
+                        <button 
+                            onclick="simulateImageUpload('camera')"
+                            class="w-full py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                            📷 拍摄照片
+                        </button>
+                        <button 
+                            onclick="simulateImageUpload('gallery')"
+                            class="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                            🖼️ 从相册选择
+                        </button>
+                        <button 
+                            onclick="closeImageModal()"
+                            class="w-full py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            取消
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function simulateImageUpload(source) {
+            closeImageModal();
+            showToast(`正在${source === 'camera' ? '拍摄' : '选择'}图片...`);
+            
+            // Simulate image processing
+            setTimeout(() => {
+                const imageQueries = [
+                    '图片中的产品是什么',
+                    '这个设计风格属于什么类型',
+                    '图片中的文字内容',
+                    '相似图片推荐'
+                ];
+                
+                const randomQuery = imageQueries[Math.floor(Math.random() * imageQueries.length)];
+                const searchInput = document.getElementById('searchInput');
+                searchInput.value = randomQuery;
+                
+                showToast(`图片分析完成：${randomQuery}`);
+                
+                // Auto search after image analysis
+                setTimeout(() => {
+                    performSearch();
+                }, 1000);
+            }, 2000);
+        }
+        
+        function closeImageModal() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) {
+                modal.classList.add('fade-out');
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
+            }
+        }
+        
+        // Mobile touch optimizations
+        function optimizeForMobile() {
+            // Add touch feedback
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                button.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+            
+            // Optimize viewport for mobile
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            }
+            
+            // Add swipe gestures for navigation (optional)
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            document.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            document.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+            
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+                
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        // Swipe left - could trigger next page
+                        console.log('Swipe left detected');
+                    } else {
+                        // Swipe right - could go back
+                        console.log('Swipe right detected');
+                    }
+                }
+            }
+        }
+        
+        // Mobile touch optimizations
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

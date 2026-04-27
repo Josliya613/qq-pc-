@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/qq-browser-ai-search-chinese.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/qq-browser-ai-search-chinese.html",
+      "headers": {
+        "Content-Type": "text/html; charset=UTF-8"
+      }
+    }
+  ]
+}
